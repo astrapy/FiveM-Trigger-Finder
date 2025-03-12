@@ -31,10 +31,7 @@ Phantom is a tool to analyze FiveM resource files for triggers, webhooks, and ob
    ```
 
 3. **Install requirements:**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
+- Navigate into the requirements folder and open `start.bat`.
 
 ## Usage
 
