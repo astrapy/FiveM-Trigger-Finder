@@ -63,6 +63,9 @@ Phantom is a tool to analyze FiveM resource files for triggers, webhooks, and ob
 
 For any suggestions, feedback, or support, join our Discord server: [discord.gg/phantomai](https://discord.gg/phantomai)
 
+## Preview
+![image](https://cdn.discordapp.com/attachments/1349281052585365596/1349390251679809627/image.png?ex=67d2ed1a&is=67d19b9a&hm=f9d87abaf6baeea5f65b552561e125f4c955efd6def1da36dd3d85e2b2f821a0&)
+
 ## License
 
 Phantom Software License Agreement
@@ -81,6 +84,3 @@ If you still think to sell it your gay
 ## Disclaimer
 
 Phantom is for educational purposes only. We are not responsible for any misuse or consequences arising from its use. Use at your own risk.
-
-## Preview
-![image](https://cdn.discordapp.com/attachments/1349281052585365596/1349390251679809627/image.png?ex=67d2ed1a&is=67d19b9a&hm=f9d87abaf6baeea5f65b552561e125f4c955efd6def1da36dd3d85e2b2f821a0&)
