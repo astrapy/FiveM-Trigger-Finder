@@ -1,0 +1,8 @@
+os
+re
+json
+shutil
+subprocess
+customtkinter
+tkinter
+requests
