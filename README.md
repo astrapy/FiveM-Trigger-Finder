@@ -67,7 +67,7 @@ For any suggestions, feedback, or support, join our Discord server: [discord.gg/
 
 Phantom Software License Agreement
 
-Copyright (c) [Year] [Your Name or Organization]
+Copyright (c) [2025] [astrapy]
 
 This software is provided for personal and non-commercial use only. By using this software, you agree to the following terms:
 
