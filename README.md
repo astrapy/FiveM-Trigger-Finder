@@ -13,8 +13,8 @@ Phantom is a tool to analyze FiveM resource files for triggers, webhooks, and ob
 
 ## Requirements
 
-- **Python 3.10.5**
-- [Python 3.10.5](https://www.python.org/downloads/release/python-3105/)
+- [**Python 3.10.5**](https://www.python.org/downloads/release/python-3105/)
+  
   Make sure to add Python to your path and disable path limit.
   
 ## Installation
