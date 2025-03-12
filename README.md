@@ -67,14 +67,14 @@ For any suggestions, feedback, or support, join our Discord server: [discord.gg/
 
 Phantom Software License Agreement
 
-Copyright (c) [2025] [astrapy]
+Copyright (c) 2025 astrapy
 
 This software is provided for personal and non-commercial use only. By using this software, you agree to the following terms:
 
 1. **No Modification** – You are NOT allowed to modify, or alter this software in any way.
 2. **No Redistribution or Rebranding** – You may NOT sell, redistribute, or rebrand this software under any other name.
 3. **Non-Commercial Use Only** – You may NOT use this software for any commercial purposes or financial gain.
-4. **Ownership** – This software remains the property of [astrapy].
+4. **Ownership** – This software remains the property of astrapy.
    
 If you still think to sell it your gay
 
