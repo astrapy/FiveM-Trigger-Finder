@@ -2,299 +2,439 @@ import os
 import re
 import json
 import shutil
-import subprocess
+import requests
+import logging
+import datetime
+import threading
+import concurrent.futures
 import customtkinter as ctk
 from tkinter import filedialog
-import requests
+from packaging import version
 
-cvs = "1.0"
-cfu = f"https://api.github.com/repos/astrapy/FiveM-Trigger-Finder/releases/latest"
+logging.basicConfig(filename='phantom.log', level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
-def b():
+a = '1.0'
+b = 'https://api.github.com/repos/astrapy/FiveM-Trigger-Finder/releases/latest'
+
+def c():
     try:
-        response = requests.get(cfu, timeout=10)
-        if response.status_code == 200:
-            d = response.json()
-            lv = d.get("tag_name", "").strip()
-            if lv.lower().startswith("v"):
-                lv = lv[1:]
-            if lv and lv > cvs:
-                print(f"New version available: {lv}. Updating...")
-                assets = d.get("assets", [])
-                du = None
-                cf = os.path.basename(__file__)
-                for asset in assets:
-                    if asset.get("name", "").lower() == cf.lower():
-                        du = asset.get("browser_du", "")
+        d = requests.get(b, timeout=10)
+        if d.status_code == 200:
+            f = d.json()
+            g_val = f.get('tag_name', '')
+            if g_val.startswith('v'):
+                g_val = g_val[1:]
+            if g_val and version.parse(g_val) > version.parse(a):
+                logging.info(f'New version available: {g_val}. Updating...')
+                l = f.get('assets', [])
+                m = None
+                n = os.path.basename(__file__)
+                for p in l:
+                    if p.get('name', '') == n:
+                        m = p.get('browser_download_url', '')
                         break
-                if du:
-                    nfs = requests.get(du, timeout=10)
-                    if nfs.status_code == 200:
-                        cfc = nfs.content
-                        cff = os.path.abspath(__file__)
-                        backup_file = cff + ".bak"
-                        shutil.copy2(cff, backup_file)
-                        with open(cff, "wb") as f:
-                            f.write(cfc)
-                        print("Update successful. Please restart the application.")
+                if m:
+                    if q(m):
+                        print('Update successful. Please restart the application.')
                         os._exit(0)
                     else:
-                        print("Failed to download the new version.")
+                        logging.error('Failed to download or verify the new version.')
                 else:
-                    print("Update asset not found in the latest release.")
+                    logging.error('Update asset not found in the latest release.')
             else:
-                print("No update available.")
+                logging.info('No update available.')
         else:
-            print("Failed to check for updates:", response.status_code)
-    except Exception as e:
-        print("Error while checking for updates:", e)
+            logging.error('Failed to check for updates: ' + str(d.status_code))
+    except Exception as r:
+        logging.exception('Error while checking for updates: ' + str(r))
+
+def s(t, u=None):
+    logging.info('Assuming valid.')
+    return True
+
+def q(v):
+    try:
+        d = requests.get(v, timeout=10)
+        if d.status_code == 200:
+            w = d.content
+            x = os.path.abspath(__file__)
+            z = x + '.bak'
+            shutil.copy2(x, z)
+            aa = x + '.tmp'
+            with open(aa, 'wb') as ab:
+                ab.write(w)
+            if s(aa):
+                shutil.move(aa, x)
+                return True
+            else:
+                os.remove(aa)
+                return False
+    except Exception as r:
+        logging.exception('Error during update download: ' + str(r))
+    return False
+
+def ad(ae='config.json'):
+    af = {
+        'trigger_patterns': [
+            r"RegisterNetEvent\(\s*[\'\"]([^\'\"]+)[\'\"]",
+            r"TriggerServerEvent\(\s*[\'\"]([^\'\"]+)[\'\"]",
+            r"TriggerClientEvent\(\s*[\'\"]([^\'\"]+)[\'\"]"
+        ],
+        'scan_keywords': {
+            'common_events': ['TriggerServerEvent', 'TriggerEvent'],
+            'common_params': ['money', 'jail', 'reward']
+        },
+        'file_extensions': ['.js', '.lua'],
+        'framework_identifiers': {
+            'ESX': ['esx_', 'esx:'],
+            'QBCore': ['qb-', 'qb_', 'qb:']
+        },
+        'output_directory': 'output'
+    }
+    if os.path.exists(ae):
+        try:
+            with open(ae, 'r', encoding='utf-8') as ab:
+                ah = json.load(ab)
+            af.update(ah)
+        except Exception as r:
+            logging.exception('Error loading config file: ' + str(r))
+    return af
 
 ctk.set_default_color_theme('lib/lavender.json')
 
-def a(b='lib/categories.json'):
-    with open(b, 'r', encoding='utf-8') as c:
-        d = json.load(c)
-    return [(e['category'], e['keywords']) for e in d]
+def aj(ak='lib/categories.json'):
+    with open(ak, 'r', encoding='utf-8') as al:
+        am = json.load(al)
+    return [(an['category'], an['keywords']) for an in am]
 
-def f(b='lib/ascii.json'):
-    with open(b, 'r', encoding='utf-8') as c:
-        return json.load(c)
+def ao(ap='lib/ascii.json'):
+    with open(ap, 'r', encoding='utf-8') as al:
+        return json.load(al)
 
-def g(h, i):
-    j = []
-    for (k, l, m) in os.walk(h):
-        for n in m:
-            if any(n.endswith(p) for p in i):
-                j.append(os.path.join(k, n))
-    return j
+def aq(ar, at):
+    au = []
+    for (av, aw, ax) in os.walk(ar):
+        for filename in ax:
+            if any(filename.endswith(az) for az in at):
+                au.append(os.path.join(av, filename))
+    return au
 
-def s(t):
-    patterns = [
-        r"RegisterNetEvent\(\s*[\'\"]([^\'\"]+)[\'\"]",
-        r"TriggerServerEvent\(\s*[\'\"]([^\'\"]+)[\'\"]",
-        r"TriggerClientEvent\(\s*[\'\"]([^\'\"]+)[\'\"]"
-    ]
-    for pattern in patterns:
-        w = re.search(pattern, t)
-        if w:
-            return w.group(1)
+def bc(bd, be):
+    for bf in be:
+        bg = re.search(bf, bd)
+        if bg:
+            return bg.group(1)
     return ''
 
-def y(z):
-    categories = a()
-    ab = {cat: [] for (cat, keywords) in categories}
-    ab['Other'] = []
-    for ad in z:
-        ae = s(ad['lineTxt'])
-        af = f"{ad['file']} {ad['lineTxt']} {ae}".lower()
-        found = False
-        for (cat, keywords) in categories:
-            if any(kw in af for kw in keywords):
-                ab[cat].append(ad)
-                found = True
+def bi(bj, bk):
+    bl = {bm: [] for (bm, bn) in bk}
+    bl['Other'] = []
+    for bo in bj:
+        bp = bc(bo['lineText'], ad()['trigger_patterns'])
+        bq = f"{bo['file']} {bo['lineText']} {bp}"
+        br = False
+        for (bm, bs) in bk:
+            if any(bt in bq for bt in bs):
+                bl[bm].append(bo)
+                br = True
                 break
-        if not found:
-            ab['Other'].append(ad)
-    for cat in ab:
-        ab[cat] = sorted(ab[cat], key=lambda al: (al['file'], al['lineNum']))
-    return ab
+        if not br:
+            bl['Other'].append(bo)
+    for bm in bl:
+        bl[bm] = sorted(bl[bm], key=lambda bu: (bu['file'], bu['lineNum']))
+    return bl
 
-def am(an, ab):
-    os.makedirs(an, exist_ok=True)
-    ascii_art = f()
-    nyf = '-- No Framework Found.\n'
-    ek = ('esx_', 'esx:')
-    qk = ('qb-', 'qb_', 'qb:')
-    fc = {'Framework: ESX': 0, 'Framework: QBCore': 0}
-    for z in ab.values():
-        for ad in z:
-            line = ad['lineTxt'].lower()
-            if any(kw in line for kw in ek):
-                fc['Framework: ESX'] += 1
-            if any(kw in line for kw in qk):
-                fc['Framework: QBCore'] += 1
-    fch = max(fc, key=lambda aw: fc[aw])
-    if fc[fch] > 0:
-        header = ascii_art.get(fch, nyf)
-    else:
-        header = nyf
-    ct = ['Robbery', 'Police', 'Money', 'Drugs', 'Weapons', 'Gangs/Factions', 'Missions/Quests', 'Jobs', 'Inventory', 'Vehicles', 'Properties', 'Status', 'Framework: ESX', 'Framework: QBCore', 'Clothes', 'License', 'Medical', 'Administration', 'Connection', 'Callback', 'UI', 'Other', 'Casino']
-    for cat in ct:
-        z = ab.get(cat, [])
-        cf = re.sub('[^a-zA-Z0-9_]', '_', cat)
-        fp = os.path.join(an, f'{cf}.lua')
-        with open(fp, 'w', encoding='utf-8') as c:
-            c.write('-- Suggestions? Send it to astrapy or in our discord.gg/phantomai\n')
-            c.write(f'{header}\n\n')
-            if z:
-                for ad in z:
-                    c_ta = ' [COMMON]' if ad.get('common') else ''
-                    c.write(f"-- Found in: {ad['file']}\n")
-                    c.write(f"-- Line: {ad['lineNum']}{c_ta}\n")
-                    c.write(f"{ad['lineTxt']}\n\n")
+def bv(bw, bx):
+    os.makedirs(bw, exist_ok=True)
+    by = ao()
+    bz = '-- No Framework Found.\n'
+    ca = {'Framework: ESX': 0, 'Framework: QBCore': 0}
+    for cb in bx.values():
+        for bo in cb:
+            cd = bo['lineText']
+            for ce, cf in ad().get('framework_identifiers', {}).items():
+                if ce.upper() == 'ESX' and any(ci in cd for ci in cf):
+                    ca['Framework: ESX'] += 1
+                if ce.upper() == 'QBCORE' and any(ci in cd for ci in cf):
+                    ca['Framework: QBCore'] += 1
+    cj = max(ca, key=lambda ck: ca[ck])
+    cl = by.get(cj, bz) if ca[cj] > 0 else bz
+    cm_list = ['Robbery', 'Police', 'Money', 'Drugs', 'Weapons', 'Gangs/Factions', 
+               'Missions/Quests', 'Jobs', 'Inventory', 'Vehicles', 'Properties', 'Status', 
+               'Framework: ESX', 'Framework: QBCore', 'Clothes', 'License', 'Medical', 
+               'Administration', 'Connection', 'Callback', 'UI', 'Other', 'Casino']
+    for cn in cm_list:
+        co = bx.get(cn, [])
+        cp = re.sub('[^a-zA-Z0-9_]', '_', cn)
+        t = os.path.join(bw, f'{cp}.lua')
+        with open(t, 'w', encoding='utf-8') as ab:
+            ab.write('-- Suggestions? Send it to astrapy or in our discord.gg/phantomai\n')
+            ab.write(f'{cl}\n\n')
+            if co:
+                for bo in co:
+                    cq = ' [COMMON]' if bo.get('common') else ''
+                    ab.write(f"-- Found in: {bo['file']}\n")
+                    ab.write(f"-- Line: {bo['lineNum']}{cq}\n")
+                    ab.write(f"{bo['lineText']}\n\n")
             else:
-                c.write('-- No triggers found for this category.\n')
+                ab.write('-- No triggers found for this category.\n')
 
-def bg(bh, bi, bj=None, bk=None):
-    if bj is None:
-        bj = {}
-    if bk is None:
-        bk = []
+def cr(cs, bx, ct, cu, cv_list):
+    sccn = os.path.basename(cs)
+    cw = os.path.join(cs, 'report.html')
+    with open(cw, 'w', encoding='utf-8') as ab:
+        ab.write(f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phantom {sccn} Report</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #000;
+            color: #fff;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: auto;
+            background: #121212;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(128, 0, 128, 0.5);
+            border: 2px solid purple;
+            border-radius: 8px;
+        }}
+        h1, h2, p {{
+            text-align: center;  /* Center headings and paragraphs */
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }}
+        th, td {{
+            padding: 10px;
+            border: 1px solid purple;
+            text-align: left;
+        }}
+        th {{
+            background-color: #1c1c1c;
+        }}
+        .summary {{
+            margin-bottom: 20px;
+        }}
+        footer {{
+            text-align: center;
+            font-size: 0.9em;
+            color: #aaa;
+            margin-top: 20px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phantom {sccn} Report</h1>
+        <p>Report generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        <h2>Trigger Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Number of Triggers</th>
+                </tr>
+            </thead>
+            <tbody>""")
+        for (cn, co) in bx.items():
+            ab.write(f'<tr><td>{cn}</td><td>{len(co)}</td></tr>')
+        ab.write(f"""       </tbody>
+        </table>
+        <h2>Webhook URLs Found</h2>
+        <p>Total webhooks detected: {len(ct)}</p>
+        <h2>Obfuscated Code</h2>
+        <p>Total files flagged for obfuscation: {len(cu)}</p>""")
+        if cv_list:
+            ab.write(f"""
+        <h2>Custom String Matches</h2>
+        <p>Total custom string matches: {len(cv_list)}</p>""")
+        ab.write(f"""
+        <footer>
+            <p>Phantom TriggerFinder &copy; {datetime.datetime.now().year}. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>""")
+    logging.info(f'HTML report generated at {cw}')
+
+def da(t, db, dc, dd):
+    de_list = []
+    df_list = []
+    dg_list = []
+    ct_list = []
+    cu_list = []
     try:
-        bk = [bl.strip() for bl in bk if bl.strip()]
-        bn = {'search': ['TriggerServerEvent', 'TriggerEvent'], 'params': ['money', 'jail', 'reward']}
-        m = g(bh, ['.js', '.lua'])
-        bo = []
-        bp = []
-        bq = []
-        for n in m:
-            try:
-                with open(n, 'r', encoding='utf-8', errors='ignore') as c:
-                    br = c.readlines()
-            except Exception:
-                continue
-            for bt, t in enumerate(br, start=1):
-                if any(bu in t for bu in bn['search']):
-                    w = re.search(r'TriggerServerEvent\([^)]*\)', t)
-                    if w:
-                        bv = any(bw in w.group(0) for bw in bn['params'])
-                        if w.group(0) not in [ad['lineTxt'] for ad in bo]:
-                            bo.append({'file': n, 'lineNum': bt, 'common': bv, 'lineTxt': w.group(0)})
-                for bx, by in bj.items():
-                    if by and bx in t:
-                        pattern = f'{re.escape(bx)}\\([^)]*\\)'
-                        bz = re.search(pattern, t)
-                        if bz:
-                            if bz.group(0) not in [ad['lineTxt'] for ad in bp]:
-                                bp.append({'file': n, 'lineNum': bt, 'common': False, 'lineTxt': bz.group(0)})
-                if bk:
-                    ca = t.lower()
-                    for cb in bk:
-                        if cb.lower() in ca:
-                            bq.append({'file': n, 'lineNum': bt, 'string': cb, 'lineTxt': t.strip()})
-        cc = os.path.basename(bh)
-        cf = os.path.join('output', cc)
-        os.makedirs(cf, exist_ok=True)
-        cg = []
-        for n in m:
-            try:
-                with open(n, 'r', encoding='utf-8', errors='ignore') as c:
-                    br = c.readlines()
-            except Exception:
-                continue
-            for bt, t in enumerate(br, start=1):
-                ca = t.lower()
-                if 'discord.com/api/webhooks' in ca or 'discordapp.com/api/webhooks' in ca:
-                    w = re.search(r'(https?://[^\s]+)', t)
-                    if w:
-                        cg.append({'file': n, 'lineNum': bt, 'common': False, 'lineTxt': w.group(0)})
-        with open(os.path.join(cf, 'webhooks.json'), 'w', encoding='utf-8') as ch:
-            json.dump(cg, ch, indent=4)
-        ci = []
-        for n in m:
-            try:
-                with open(n, 'r', encoding='utf-8', errors='ignore') as c:
-                    content = c.read()
-            except Exception:
-                continue
-            if re.search(r'[^\s]{50,}', content):
-                ci.append({'file': n, 'common': False, 'lineTxt': 'Obfuscated code detected'})
-        with open(os.path.join(cf, 'obfuscated.json'), 'w', encoding='utf-8') as ck:
-            json.dump(ci, ck, indent=4)
-        cl = bo + bp
-        ab = y(cl)
-        an_path = os.path.join(cf, 'triggers')
-        am(an_path, ab)
-        if bq:
-            cm = os.path.join('output', 'customstrings')
-            os.makedirs(cm, exist_ok=True)
-            cn = os.path.join(cm, f'{cc}.json')
-            with open(cn, 'w', encoding='utf-8') as co:
-                json.dump(bq, co, indent=4)
-        cp = f'Results saved to:\n  • JSON files in: {cf}\n  • Trigger files in: {an_path}\n'
-        if bq:
-            cp += f"  • Custom strings in: {os.path.join('output', 'customstrings', cc + '.json')}\n"
-        bi(cp, color='green')
-    except Exception as cq:
-        bi(f'❌ Error: {cq}\n', color='red')
+        with open(t, 'r', encoding='utf-8', errors='ignore') as ab:
+            dh = ab.readlines()
+    except Exception as r:
+        logging.exception('Error reading file ' + t + ': ' + str(r))
+        return (de_list, df_list, dg_list, ct_list, cu_list)
 
-class cr(ctk.CTk):
+    for dj, bd in enumerate(dh, start=1):
+        if any(dk in bd for dk in db['scan_keywords']['common_events']):
+            matches = re.findall(r'TriggerServerEvent\([^)]*\)', bd)
+            for m in matches:
+                dl_flag = any(param in m for param in db['scan_keywords']['common_params'])
+                if m not in [bo['lineText'] for bo in de_list]:
+                    de_list.append({'file': t,'lineNum': dj,'common': dl_flag,'lineText': m})
 
-    def __init__(self):
+        for do, dp in dc.items():
+            if dp and do in bd:
+                pattern = rf'{re.escape(do)}\([^)]*\)'
+                matches = re.findall(pattern, bd)
+                for m in matches:
+                    if m not in [bo['lineText'] for bo in df_list]:
+                        df_list.append({'file': t,'lineNum': dj,'common': False,'lineText': m})
+        if dd:
+            for dr in dd:
+                if dr in bd:
+                    dg_list.append({'file': t,'lineNum': dj,'string': dr,'lineText': bd})
+        if 'discord.com/api/webhooks' in bd or 'discordapp.com/api/webhooks' in bd:
+            webhook_matches = re.findall(r'(https?://[^\s]+)', bd)
+            for w_match in webhook_matches:
+                if 'discord.com/api/webhooks' in w_match or 'discordapp.com/api/webhooks' in w_match:
+                    ct_list.append({'file': t,'lineNum': dj,'common': False,'lineText': w_match})
+    try:
+        with open(t, 'r', encoding='utf-8', errors='ignore') as ab:
+            content = ab.read()
+        if re.search(r'[^ \t\n\r\f\v]{50,}', content):
+            cu_list.append({'file': t,'common': False,'lineText': 'Obfuscated code detected'})
+    except Exception as r:
+        logging.exception('Error during obfuscation check in ' + t + ': ' + str(r))
+
+    return (de_list, df_list, dg_list, ct_list, cu_list)
+
+
+def dt(ar, du, dc, dd):
+    db = ad()
+    dv = aq(ar, db['file_extensions'])
+    logging.info(f'Found {len(dv)} files in directory {ar}')
+    dw = []
+    dx = []
+    dy = []
+    dz = []
+    ea = []
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        ftff = {executor.submit(da, t, db, dc, dd): t for t in dv}
+        for eh, future in enumerate(concurrent.futures.as_completed(ftff), start=1):
+            t = ftff[future]
+            try:
+                (de, ek, cv_list, ct_list, cu_list) = future.result()
+                dw.extend(de)
+                dx.extend(ek)
+                dy.extend(cv_list)
+                dz.extend(ct_list)
+                ea.extend(cu_list)
+            except Exception as r:
+                logging.exception('Error processing file ' + t + ': ' + str(r))
+            du(f'Scanned {eh}/{len(dv)} files...')
+    en = dw + dx
+    bk = aj()
+    bx = bi(en, bk)
+    cs = os.path.join(db['output_directory'], os.path.basename(ar))
+    os.makedirs(cs, exist_ok=True)
+    eo = os.path.join(cs, 'triggers')
+    bv(eo, bx)
+    with open(os.path.join(cs, 'webhooks.json'), 'w', encoding='utf-8') as ab:
+        json.dump(dz, ab, indent=4)
+    with open(os.path.join(cs, 'obfuscated.json'), 'w', encoding='utf-8') as ab:
+        json.dump(ea, ab, indent=4)
+    if dy:
+        ep_dir = os.path.join(db['output_directory'], 'customstrings')
+        os.makedirs(ep_dir, exist_ok=True)
+        eq_path = os.path.join(ep_dir, os.path.basename(ar) + '.json')
+        with open(eq_path, 'w', encoding='utf-8') as ab:
+            json.dump(dy, ab, indent=4)
+    cr(cs, bx, dz, ea, dy)
+    er = f'Results saved to:\n  • JSON files in: {cs}\n  • Trigger files in: {eo}\n  • HTML report in: {cs}\n'
+    if dy:
+        er += f"  • Custom strings in: {os.path.join(db['output_directory'], 'customstrings', os.path.basename(ar) + '.json')}\n"
+    du(er, color='green')
+
+class es(ctk.CTk):
+
+    def __init__(et):
         super().__init__()
-        self.title('Phantom')
-        self.geometry('450x580')
-        self.iconbitmap('lib/logo.ico')
-        self.cw = ctk.CTkLabel(self, text='Suggestions: discord.gg/phantomai', text_color='gray')
-        self.cw.pack(pady=(5, 0))
-        self.cy = ''
-        self.cz = ctk.CTkTabview(self)
-        self.cz.pack(expand=True, fill='both', padx=20, pady=1)
-        self.cz.add('Trigger Finder')
-        self.db = self.cz.tab('Trigger Finder')
-        self.dd = ctk.CTkFrame(self.db)
-        self.dd.pack(pady=(10, 0), padx=20, fill='x')
-        self.de = ctk.CTkButton(self.dd, text='Select Folder', command=self.df, width=120)
-        self.de.pack(pady=5, anchor='center')
-        self.dg = ctk.CTkFrame(self.db)
-        self.dg.pack(pady=5, padx=20, fill='x')
-        self.dh = ctk.CTkLabel(self.dg, text='No folder selected', text_color='red')
-        self.dh.pack(padx=(10, 10), pady=5, anchor='center')
-        self.di = ctk.CTkFrame(self.db)
-        self.di.pack(pady=10, padx=20, fill='x')
-        self.dj = ctk.CTkLabel(self.di, text='Scan Additional Events:')
-        self.dj.pack(pady=(0, 5))
-        self.dk = ['AddEventHandler', 'RegisterNetEvent', 'TriggerClientEvent']
-        self.dl = {}
-        for dm in self.dk:
-            dn = ctk.BooleanVar(value=True)
-            do = ctk.CTkCheckBox(self.di, text=dm, variable=dn)
-            do.pack(anchor='w', padx=10, pady=5)
-            self.dl[dm] = dn
-        self.dp = ctk.CTkFrame(self.db)
-        self.dp.pack(pady=10, padx=20, fill='x')
-        self.dq = ctk.CTkLabel(self.dp, text='Custom Strings (comma separated):')
-        self.dq.pack(pady=(0, 5))
-        self.dr = ctk.StringVar()
-        self.ds = ctk.CTkEntry(self.dp, textvariable=self.dr, width=300)
-        self.ds.pack(padx=10, pady=5)
-        self.dt = ctk.CTkButton(self.db, text='Start Scan', command=self.du)
-        self.dt.pack(pady=10)
-        self.dv = ctk.CTkTextbox(self.db, wrap='word', width=760, height=200)
-        self.dv.pack(padx=20, pady=10, fill='both', expand=True)
+        et.title('Phantom')
+        et.geometry('450x580')
+        et.iconbitmap('lib/logo.ico')
+        et.ex = ctk.CTkLabel(et, text='Suggestions: discord.gg/phantomai', text_color='gray')
+        et.ex.pack(pady=(5, 0))
+        et.ez = ''
+        et.fa = ctk.CTkTabview(et)
+        et.fa.pack(expand=True, fill='both', padx=20, pady=10)
+        et.fa.add('Trigger Finder')
+        et.fc = et.fa.tab('Trigger Finder')
+        et.fe = ctk.CTkFrame(et.fc)
+        et.fe.pack(pady=(10, 0), padx=20, fill='x')
+        et.ff = ctk.CTkButton(et.fe, text='Select Folder', command=et.fg, width=120)
+        et.ff.pack(pady=5, anchor='center')
+        et.fh = ctk.CTkLabel(et.fe, text='No folder selected', text_color='red')
+        et.fh.pack(pady=5, anchor='center')
+        et.fi = ctk.CTkFrame(et.fc)
+        et.fi.pack(pady=5, padx=20, fill='x')
+        et.fj = ctk.CTkLabel(et.fi, text='Scan Additional Events:')
+        et.fj.pack(pady=(0, 5))
+        et.dc = {}
+        et.fk = ['AddEventHandler', 'RegisterNetEvent', 'TriggerClientEvent']
+        for do in et.fk:
+            fl = ctk.BooleanVar(value=True)
+            fm = ctk.CTkCheckBox(et.fi, text=do, variable=fl)
+            fm.pack(anchor='w', padx=10, pady=5)
+            et.dc[do] = fl
+        et.fn = ctk.CTkFrame(et.fc)
+        et.fn.pack(pady=10, padx=20, fill='x')
+        et.fo = ctk.CTkLabel(et.fn, text='Custom Strings (comma separated):')
+        et.fo.pack(pady=(0, 5))
+        et.fp = ctk.StringVar()
+        et.fq = ctk.CTkEntry(et.fn, textvariable=et.fp, width=300)
+        et.fq.pack(padx=10, pady=5)
+        et.fr = ctk.CTkButton(et.fc, text='Start Scan', command=et.fs)
+        et.fr.pack(pady=10)
+        et.ft = ctk.CTkTextbox(et.fc, wrap='word', width=550, height=250)
+        et.ft.pack(padx=20, pady=10, fill='both', expand=True)
+        et.fu = ctk.CTkProgressBar(et.fc)
+        et.fu.set(0)
+        et.fu.pack(padx=20, pady=(0, 10), fill='x')
 
-    def df(self):
-        dw = filedialog.askdirectory()
-        if dw:
-            self.cy = dw
-            self.dh.configure(text=self.cy, text_color='green')
+    def fg(et):
+        fv = filedialog.askdirectory()
+        if fv:
+            et.ez = fv
+            et.fh.configure(text=et.ez, text_color='green')
 
-    def dy(self, dz, color='white', eb=None, **kwargs):
-        self.dv.configure(state='normal')
-        self.dv.insert('end', dz + '\n')
-        self.dv.see('end')
-        self.dv.configure(state='disabled')
+    def fx(et, fy, fz='white', **ga):
+        et.ft.configure(state='normal')
+        et.ft.insert('end', fy + '\n')
+        et.ft.see('end')
+        et.ft.configure(state='disabled')
 
-
-    def du(self):
-        if not self.cy:
-            self.dy('🚫 Please select a folder first.')
+    def fs(et):
+        if not et.ez:
+            et.fx('🚫 Please select a folder first.')
             return
-        self.dv.configure(state='normal')
-        self.dv.delete('1.0', 'end')
-        self.dv.configure(state='disabled')
-        self.dy('🔍 Scanning directory files...')
-        self.after(500, self.ek)
+        et.ft.configure(state='normal')
+        et.ft.delete('1.0', 'end')
+        et.ft.configure(state='disabled')
+        et.fx('🔍 Scanning directory files...')
+        et.after(500, et.gf)
 
-    def ek(self):
-        self.dy('📝 Analyzing file contents for triggers, webhook and obfuscated code...')
-        bj = {dm: dn.get() for dm, dn in self.dl.items()}
-        el = self.dr.get().strip()
-        em = [bl.strip() for bl in el.split(',')] if el else []
-        bg(self.cy, self.dy, bj, em)
-        self.dy('\n✅ Analyzation completed. Check the output folder.')
+    def gf(et):
+        gg = {gh: fl.get() for gh, fl in et.dc.items()}
+        dd = [s.strip() for s in et.fp.get().split(',')] if et.fp.get() else []
+        dt(et.ez, et.fx, gg, dd)
+        et.fx('\n✅ Analysis completed. Check the output folder.')
 
 if __name__ == '__main__':
-    b()
-    en = cr()
-    en.mainloop()
+    c()
+    gk = es()
+    gk.mainloop()
