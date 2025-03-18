@@ -11,6 +11,10 @@ Phantom is a tool to analyze FiveM resource files for triggers, webhooks, and ob
 - **Simple GUI:** Our tool has an easy to use GUI for selecting folders and configuring scan options.
 - **Automatic Updates:** Our tool stays always updated to our newest release by checking each time you run our tool.
 
+## Update
+
+- Our tool will now provide an detailed HTML webpage to scroll trough categories etc
+- 
 ## Requirements
 
 - [**Python 3.10.5**](https://www.python.org/downloads/release/python-3105/)
