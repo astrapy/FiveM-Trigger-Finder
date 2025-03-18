@@ -67,7 +67,7 @@ For any suggestions, feedback, or support, join our Discord server: [discord.gg/
 
 ## Preview
 ![image](https://cdn.discordapp.com/attachments/1349281052585365596/1349390251679809627/image.png?ex=67d2ed1a&is=67d19b9a&hm=f9d87abaf6baeea5f65b552561e125f4c955efd6def1da36dd3d85e2b2f821a0&)
-
+![image](https://cdn.discordapp.com/attachments/1349281052585365596/1351481815642279966/image.png?ex=67da8906&is=67d93786&hm=da2063dc59d2acac42e77938689715cc27300bcc3a167e5229e3f7edb61285a2&)
 ## License
 
 Phantom Software License Agreement
