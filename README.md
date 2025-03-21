@@ -14,6 +14,7 @@ Phantom is a tool to analyze FiveM resource files for triggers, webhooks, and ob
 ## Update
 
 - Our tool will now provide an detailed HTML webpage to scroll trough categories etc
+- It will no longer give an output folder with lua files, only the webpage
   
 ## Requirements
 
